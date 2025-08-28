@@ -158,28 +158,25 @@ jobs:
         Write-Host "MSVC version: $($msvcPath.Name)"
         Write-Host "Compiler bin dir: $compilerBinDir"
         
-        # Create a batch file to run the compilation with proper environment
-        $batchScript = @'
-@echo off
-call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64
-echo Environment variables set
-where cl.exe
-echo.
-
-"{1}\bin\nvcc.exe" -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL ^
-  -I"{2}\include" ^
-  gpu_hash_searcher.cpp ^
-  -o hash_searcher_windows_gpu.exe ^
-  -lcudart ^
-  -L"{2}\lib" ^
-  -llibssl -llibcrypto -lws2_32 -lcrypt32 ^
-  --compiler-bindir "{3}"
-
-echo Build completed with exit code: %ERRORLEVEL%
-'@ -f $vsPath, $cudaPath, $vcpkgPath, $compilerBinDir
+        # Create batch file content using string concatenation
+        $batchContent = "@echo off`r`n"
+        $batchContent += "call `"$vsPath\VC\Auxiliary\Build\vcvarsall.bat`" x64`r`n"
+        $batchContent += "echo Environment variables set`r`n"
+        $batchContent += "where cl.exe`r`n"
+        $batchContent += "echo.`r`n"
+        $batchContent += "`"$cudaPath\bin\nvcc.exe`" -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL ^`r`n"
+        $batchContent += "  -I`"$vcpkgPath\include`" ^`r`n"
+        $batchContent += "  gpu_hash_searcher.cpp ^`r`n"
+        $batchContent += "  -o hash_searcher_windows_gpu.exe ^`r`n"
+        $batchContent += "  -lcudart ^`r`n"
+        $batchContent += "  -L`"$vcpkgPath\lib`" ^`r`n"
+        $batchContent += "  -llibssl -llibcrypto -lws2_32 -lcrypt32 ^`r`n"
+        $batchContent += "  --compiler-bindir `"$compilerBinDir`"`r`n"
+        $batchContent += "echo Build completed with exit code: %ERRORLEVEL%`r`n"
         
         # Write the batch script and execute it
-        $batchScript | Out-File -FilePath "build.bat" -Encoding ascii
+        [System.IO.File]::WriteAllText("build.bat", $batchContent)
+        Write-Host "Generated batch file:"
         Get-Content "build.bat" | Write-Host
         cmd /c "build.bat"
       shell: powershell
