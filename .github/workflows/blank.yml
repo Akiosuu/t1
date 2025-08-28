@@ -13,9 +13,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install CUDA Toolkit
+      run: choco install cuda -y
+
+    - name: Add CUDA to PATH
+      shell: powershell
       run: |
-        choco install cuda -y
-        refreshenv
+        echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9\lib\x64" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Verify CUDA
       run: nvcc --version
