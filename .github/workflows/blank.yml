@@ -1,35 +1,32 @@
-name: Windows Build
+name: Windows CUDA Build
 
 on:
   push:
   pull_request:
 
 jobs:
-  build-windows:
+  build-windows-gpu:
     runs-on: windows-latest
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4   # latest version
+      uses: actions/checkout@v4
 
-    - name: Set up MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-
-    - name: Install OpenSSL (via vcpkg)
+    - name: Install CUDA Toolkit
       run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg install openssl:x64-windows
+        choco install cuda -y
+        refreshenv
 
-    - name: Build CPU OpenSSL version
+    - name: Verify CUDA
+      run: nvcc --version
+
+    - name: Build GPU OpenSSL version
       run: |
-        cl /O2 /EHsc /D USE_OPENSSL gpu_hash_searcher.cpp ^
-           /I .\vcpkg\installed\x64-windows\include ^
-           /link /LIBPATH:.\vcpkg\installed\x64-windows\lib libssl.lib libcrypto.lib ^
-           /Fe:hash_searcher_cpu_ssl.exe
+        nvcc -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL gpu_hash_searcher.cpp ^
+            -o hash_searcher_gpu_ssl.exe -lcudart -lssl -lcrypto
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: hash_searcher-windows
-        path: hash_searcher_cpu_ssl.exe
+        name: hash_searcher-windows-gpu
+        path: hash_searcher_gpu_ssl.exe
