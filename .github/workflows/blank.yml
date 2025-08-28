@@ -8,6 +8,59 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
+  build-linux-gpu:
+    runs-on: ubuntu-20.04
+    name: Build Linux GPU Version
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libssl-dev
+
+    - name: Install CUDA Toolkit
+      run: |
+        # Add NVIDIA package repository
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+        sudo dpkg -i cuda-keyring_1.0-1_all.deb
+        sudo apt-get update
+        
+        # Install CUDA toolkit without driver
+        sudo apt-get install -y cuda-toolkit-12-0
+        
+        # Set environment variables
+        echo "/usr/local/cuda/bin" >> $GITHUB_PATH
+        echo "CUDA_PATH=/usr/local/cuda" >> $GITHUB_ENV
+
+    - name: Verify CUDA installation
+      run: |
+        nvcc --version
+        ls -la /usr/local/cuda/bin/
+
+    - name: Build GPU version with OpenSSL
+      run: |
+        export PATH=/usr/local/cuda/bin:$PATH
+        export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+        
+        nvcc -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL \
+             gpu_hash_searcher.cpp \
+             -o hash_searcher_linux_gpu.exe \
+             -lcudart -lssl -lcrypto
+
+    - name: Verify executable
+      run: |
+        file hash_searcher_linux_gpu.exe
+        ldd hash_searcher_linux_gpu.exe
+
+    - name: Upload Linux GPU executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: hash_searcher_linux_gpu
+        path: hash_searcher_linux_gpu.exe
+
   build-windows-gpu:
     runs-on: windows-2019
     name: Build Windows GPU Version
