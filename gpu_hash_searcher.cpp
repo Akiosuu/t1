@@ -10,7 +10,7 @@
 #include <vector>
 #include <thread>
 
-// CUDA kernel for parallel hash computation
+// CUDA kernel for parallel hash computation 
 __device__ const char d_chars[] = "0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 
 __device__ void cuda_sha1(const char* input, int len, unsigned char* hash) {
@@ -329,4 +329,5 @@ int main() {
     }
     
     return 0;
+
 }
