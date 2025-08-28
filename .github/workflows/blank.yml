@@ -1,0 +1,35 @@
+name: Windows Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install OpenSSL (via vcpkg)
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg install openssl:x64-windows
+
+    - name: Build CPU OpenSSL version
+      run: |
+        cl /O2 /EHsc /D USE_OPENSSL gpu_hash_searcher.cpp ^
+           /I .\vcpkg\installed\x64-windows\include ^
+           /link /LIBPATH:.\vcpkg\installed\x64-windows\lib libssl.lib libcrypto.lib ^
+           /Fe:hash_searcher_cpu_ssl.exe
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: hash_searcher-windows
+        path: hash_searcher_cpu_ssl.exe
