@@ -159,24 +159,24 @@ jobs:
         Write-Host "Compiler bin dir: $compilerBinDir"
         
         # Create a batch file to run the compilation with proper environment
-        $batchScript = @"
+        $batchScript = @'
 @echo off
-call "$vsPath\VC\Auxiliary\Build\vcvarsall.bat" x64
+call "{0}\VC\Auxiliary\Build\vcvarsall.bat" x64
 echo Environment variables set
 where cl.exe
 echo.
 
-"$cudaPath\bin\nvcc.exe" -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL ^
-  -I"$vcpkgPath\include" ^
+"{1}\bin\nvcc.exe" -std=c++11 -O3 -DUSE_CUDA -DUSE_OPENSSL ^
+  -I"{2}\include" ^
   gpu_hash_searcher.cpp ^
   -o hash_searcher_windows_gpu.exe ^
   -lcudart ^
-  -L"$vcpkgPath\lib" ^
+  -L"{2}\lib" ^
   -llibssl -llibcrypto -lws2_32 -lcrypt32 ^
-  --compiler-bindir "$compilerBinDir"
+  --compiler-bindir "{3}"
 
 echo Build completed with exit code: %ERRORLEVEL%
-"@
+'@ -f $vsPath, $cudaPath, $vcpkgPath, $compilerBinDir
         
         # Write the batch script and execute it
         $batchScript | Out-File -FilePath "build.bat" -Encoding ascii
