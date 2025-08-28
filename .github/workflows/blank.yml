@@ -99,16 +99,23 @@ jobs:
         echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       shell: powershell
 
-    - name: Setup vcpkg for OpenSSL
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgGitCommitId: 'f7423ee180c4b7f40d43402c2feb3859161ef625'  # Version 2023.11.20
-        runVcpkgInstall: true
-
-    - name: Install OpenSSL
+    - name: Install OpenSSL using vcpkg
       run: |
-        vcpkg install openssl:x64-windows-static
-      shell: cmd
+        # Clone vcpkg if not present
+        if (!(Test-Path "C:\vcpkg")) {
+          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+          cd C:\vcpkg
+          .\bootstrap-vcpkg.bat
+          .\vcpkg integrate install
+        }
+        
+        # Install OpenSSL
+        cd C:\vcpkg
+        .\vcpkg install openssl:x64-windows-static
+        
+        # Set environment variable for build step
+        echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      shell: powershell
 
     - name: Verify CUDA installation
       run: |
@@ -127,7 +134,7 @@ jobs:
         } else { 
           "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.5" 
         }
-        $vcpkgPath = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static"
+        $vcpkgPath = "$env:VCPKG_ROOT\installed\x64-windows-static"
         
         Write-Host "Using CUDA path: $cudaPath"
         Write-Host "Using vcpkg path: $vcpkgPath"
